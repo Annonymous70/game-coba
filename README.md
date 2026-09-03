@@ -1,1 +1,407 @@
-# game-coba
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CEO Simulator Pro - 3 Years Strategy</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --border: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 12px; padding-bottom: 50px; }
+        .container { max-width: 950px; margin: 0 auto; }
+
+        header { text-align: center; margin-bottom: 12px; }
+        header h1 { font-size: 1.3rem; color: var(--primary); }
+        header p { font-size: 0.75rem; color: #64748b; }
+
+        /* Navigation Tabs */
+        .tab-nav { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 4px; }
+        .tab-btn { background: #cbd5e1; color: var(--primary); border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { background: var(--accent); color: white; }
+
+        /* Status Grid */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin-bottom: 12px; }
+        .metric-card { background: var(--card); padding: 8px; border-radius: 8px; border: 1px solid var(--border); }
+        .metric-title { font-size: 0.65rem; color: #64748b; font-weight: bold; text-transform: uppercase; }
+        .metric-value { font-size: 0.85rem; font-weight: bold; margin-top: 2px; }
+
+        /* Card Section */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .card { background: var(--card); border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
+        .card-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 4px; color: var(--accent); }
+
+        /* Forms */
+        .form-group { margin-bottom: 8px; }
+        .form-group label { display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px; }
+        .form-control { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.8rem; }
+        .flex-row { display: flex; gap: 6px; align-items: center; }
+
+        /* Buttons */
+        .btn-main { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 0.9rem; font-weight: bold; cursor: pointer; margin-top: 8px; }
+        .btn-main:disabled { background: #94a3b8; }
+        .btn-sec { background: #475569; color: white; border: none; padding: 5px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
+
+        /* Tables & Console */
+        table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+        th, td { border: 1px solid var(--border); padding: 5px; text-align: left; }
+        th { background: #f1f5f9; }
+
+        .console { background: #0f172a; color: #38bdf8; font-family: monospace; padding: 10px; border-radius: 6px; font-size: 0.7rem; height: 160px; overflow-y: auto; line-height: 1.3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Simulasi CEO Perusahaan Pro (3 Tahun)</h1>
+        <p>Kelola Ekosistem Bisnis & Rencana Strategis 36 Bulan</p>
+    </header>
+
+    <!-- Stat Top Bar -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-title">Periode & Ekonomi</div>
+            <div class="metric-value" id="m-month">Bulan 1 / 36</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-title">Kas Perusahaan</div>
+            <div class="metric-value" style="color:var(--success)" id="m-cash">300 JT</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-title">Saham Pendiri</div>
+            <div class="metric-value" id="m-shares">100%</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-title">Jalur Ekspor</div>
+            <div class="metric-value" id="m-export" style="color:var(--danger)">Non-Aktif</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-title">Reputasi Brand</div>
+            <div class="metric-value" style="color:var(--accent)" id="m-rep">100 / 100</div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('ops')">1. Produksi & Ekspor</button>
+        <button class="tab-btn" onclick="switchTab('marketing')">2. Marketing, PR & R&D</button>
+        <button class="tab-btn" onclick="switchTab('finance')">3. Keuangan & Obligasi</button>
+        <button class="tab-btn" onclick="switchTab('reports')">4. Laporan Arus Kas</button>
+    </div>
+
+    <!-- TAB 1: PRODUKSI & EKSPOR -->
+    <div id="tab-ops" class="tab-content active">
+        <div class="card">
+            <div class="card-title">Rencana Produksi Bulanan</div>
+            <div class="form-group">
+                <label>Target Produksi (Unit):</label>
+                <input type="number" id="in-prod" class="form-control" value="1000">
+                <small style="color:#64748b">Modal Bahan: Rp 50.000 / unit | Batas SDM & Pabrik: <span id="lbl-max-cap">1500</span> Unit</small>
+            </div>
+            <div class="form-group">
+                <label>Harga Jual per Unit (Rp):</label>
+                <input type="number" id="in-price" class="form-control" value="120000">
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Ekspansi Pasar Internasional (Ekspor)</div>
+            <p style="font-size:0.75rem; margin-bottom:8px;">Membuka pasar ekspor meningkatkan potensi permintaan produk hingga 2x lipat.</p>
+            <button id="btn-export" class="btn-sec" style="background:var(--accent)" onclick="enableExport()">Buka Lisensi Ekspor (Biaya Rp 200 Juta)</button>
+        </div>
+    </div>
+
+    <!-- TAB 2: MARKETING & PR -->
+    <div id="tab-marketing" class="tab-content">
+        <div class="card">
+            <div class="card-title">Anggaran Pemasaran & Humas (PR)</div>
+            <div class="form-group">
+                <label>Marketing & Iklan (Rp):</label>
+                <input type="number" id="in-mkt" class="form-control" value="15000000">
+            </div>
+            <div class="form-group">
+                <label>Kampanye Public Relations / PR (Rp):</label>
+                <input type="number" id="in-pr" class="form-control" value="5000000">
+                <small style="color:#64748b">Menjaga Reputasi Brand dari krisis dan memicu kepercayaan investor.</small>
+            </div>
+            <div class="form-group">
+                <label>Riset & Pengembangan / R&D (Rp):</label>
+                <input type="number" id="in-rnd" class="form-control" value="5000000">
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: KEUANGAN & OBLIGASI -->
+    <div id="tab-finance" class="tab-content">
+        <div class="card">
+            <div class="card-title">Pendanaan: Saham & Investor</div>
+            <p style="font-size:0.75rem; margin-bottom:6px;">Sisa Saham Pendiri: <b id="lbl-shares">100%</b></p>
+            <div class="flex-row">
+                <button class="btn-sec" style="background:var(--success)" onclick="sellShares()">Jual 10% Saham (+Rp 100 JT)</button>
+                <button class="btn-sec" style="background:var(--warning)" onclick="buyShares()">Buyback 10% Saham (-Rp 120 JT)</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Pinjaman Bank & Penerbitan Obligasi</div>
+            <div class="flex-row" style="margin-bottom:8px;">
+                <button class="btn-sec" style="background:var(--danger)" onclick="takeLoan()">Pinjam Bank Rp 50 JT (Bunga 2%)</button>
+                <button class="btn-sec" style="background:var(--success)" onclick="payLoan()">Bayar Utang Rp 50 JT</button>
+            </div>
+            <div class="flex-row">
+                <button class="btn-sec" style="background:var(--primary)" onclick="issueBond()">Terbitkan Obligasi Rp 150 JT (Bunga 1%/Bulan)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: LAPORAN ARUS KAS -->
+    <div id="tab-reports" class="tab-content">
+        <div class="card">
+            <div class="card-title">Laporan Arus Kas Bulanan</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kategori Arus Kas</th>
+                        <th>Nominal (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Arus Kas Operasional</td><td id="cf-op">0</td></tr>
+                    <tr><td>Arus Kas Investasi (R&D, Lisensi)</td><td id="cf-inv">0</td></tr>
+                    <tr><td>Arus Kas Pendanaan (Saham, Bank, Obligasi)</td><td id="cf-fin">0</td></tr>
+                    <tr style="font-weight:bold; background:#f1f5f9;"><td>Net Cash Flow</td><td id="cf-net">0</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <button id="btn-next" class="btn-main" onclick="processTurn()">Jalankan Bulan Ini & Lanjut</button>
+
+    <!-- Console Log -->
+    <div class="card" style="margin-top:12px;">
+        <div class="card-title">Log Keputusan CEO</div>
+        <div class="console" id="log-box">
+            > Simulasi Strategi 3 Tahun v4.0 Aktif.<br>
+        </div>
+    </div>
+</div>
+
+<script>
+    const TAX_RATE = 0.11;
+    let ecoConditions = ['Normal', 'Booming (+30% Demand)', 'Resesi (-25% Demand)', 'Inflasi (Bahan +15%)'];
+
+    let state = {
+        month: 1,
+        maxMonths: 36,
+        cash: 300000000,
+        initialCash: 300000000,
+        debtBank: 0,
+        debtBond: 0,
+        sharesOwned: 100,
+        employees: 10,
+        factories: 1,
+        exportActive: false,
+        reputation: 100,
+        currentEco: 'Normal',
+        lastCF: { op: 0, inv: 0, fin: 0, net: 0 }
+    };
+
+    function formatIDR(val) {
+        return "Rp " + Math.floor(val).toLocaleString('id-ID');
+    }
+
+    function log(msg) {
+        const box = document.getElementById('log-box');
+        box.innerHTML += `> ${msg}<br>`;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+    }
+
+    function enableExport() {
+        if (state.exportActive) {
+            alert("Jalur ekspor sudah aktif!");
+            return;
+        }
+        if (state.cash < 200000000) {
+            alert("Kas tidak mencukupi untuk lisensi ekspor!");
+            return;
+        }
+        state.cash -= 200000000;
+        state.exportActive = true;
+        state.lastCF.inv -= 200000000;
+        log(`Membuka Lisensi Ekspor Internasional seharga Rp 200 Juta.`);
+        document.getElementById('btn-export').disabled = true;
+        updateUI();
+    }
+
+    function sellShares() {
+        if (state.sharesOwned <= 30) return;
+        state.sharesOwned -= 10;
+        state.cash += 100000000;
+        state.lastCF.fin += 100000000;
+        log(`Menjual 10% saham. Menerima modal Rp 100 Juta.`);
+        updateUI();
+    }
+
+    function buyShares() {
+        if (state.sharesOwned >= 100 || state.cash < 120000000) return;
+        state.sharesOwned += 10;
+        state.cash -= 120000000;
+        state.lastCF.fin -= 120000000;
+        log(`Buyback 10% saham seharga Rp 120 Juta.`);
+        updateUI();
+    }
+
+    function takeLoan() {
+        state.cash += 50000000;
+        state.debtBank += 50000000;
+        state.lastCF.fin += 50000000;
+        log(`Pinjam bank Rp 50 Juta.`);
+        updateUI();
+    }
+
+    function payLoan() {
+        if (state.debtBank < 50000000 || state.cash < 50000000) return;
+        state.cash -= 50000000;
+        state.debtBank -= 50000000;
+        state.lastCF.fin -= 50000000;
+        log(`Bayar pinjaman bank Rp 50 Juta.`);
+        updateUI();
+    }
+
+    function issueBond() {
+        if (state.reputation < 70) {
+            alert("Reputasi perusahaan terlalu rendah untuk menerbitkan obligasi!");
+            return;
+        }
+        state.cash += 150000000;
+        state.debtBond += 150000000;
+        state.lastCF.fin += 150000000;
+        log(`Menerbitkan Obligasi Perusahaan senilai Rp 150 Juta.`);
+        updateUI();
+    }
+
+    function updateUI() {
+        let year = Math.ceil(state.month / 12);
+        let monthInYear = state.month % 12 === 0 ? 12 : state.month % 12;
+        
+        document.getElementById('m-month').innerText = `Bln ${state.month} (Thn ${year}-${monthInYear})`;
+        document.getElementById('m-cash').innerText = formatIDR(state.cash);
+        document.getElementById('m-shares').innerText = `${state.sharesOwned}%`;
+        document.getElementById('m-export').innerText = state.exportActive ? 'Aktif' : 'Non-Aktif';
+        document.getElementById('m-export').style.color = state.exportActive ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('m-rep').innerText = `${state.reputation} / 100`;
+
+        document.getElementById('lbl-shares').innerText = `${state.sharesOwned}%`;
+        document.getElementById('lbl-max-cap').innerText = Math.min(state.employees * 150, state.factories * 2000);
+
+        document.getElementById('cf-op').innerText = formatIDR(state.lastCF.op);
+        document.getElementById('cf-inv').innerText = formatIDR(state.lastCF.inv);
+        document.getElementById('cf-fin').innerText = formatIDR(state.lastCF.fin);
+        document.getElementById('cf-net').innerText = formatIDR(state.lastCF.net);
+    }
+
+    function processTurn() {
+        if (state.month > state.maxMonths) return;
+
+        let prodQty = parseInt(document.getElementById('in-prod').value) || 0;
+        let price = parseInt(document.getElementById('in-price').value) || 0;
+        let mkt = parseInt(document.getElementById('in-mkt').value) || 0;
+        let pr = parseInt(document.getElementById('in-pr').value) || 0;
+        let rnd = parseInt(document.getElementById('in-rnd').value) || 0;
+
+        let maxCap = Math.min(state.employees * 150, state.factories * 2000);
+        if (prodQty > maxCap) {
+            alert(`Target produksi (${prodQty} unit) melebihi batas kapasitas (${maxCap} unit)!`);
+            return;
+        }
+
+        let materialUnitCost = 50000;
+        let demandMult = 1.0;
+        if (state.currentEco.includes('Booming')) demandMult = 1.3;
+        if (state.currentEco.includes('Resesi')) demandMult = 0.75;
+        if (state.currentEco.includes('Inflasi')) materialUnitCost *= 1.15;
+
+        let cogs = prodQty * materialUnitCost;
+        let salaries = state.employees * 4500000;
+        let bankInterest = state.debtBank * 0.02;
+        let bondInterest = state.debtBond * 0.01;
+        let totalOps = cogs + salaries + mkt + pr + rnd + bankInterest + bondInterest;
+
+        if (totalOps > state.cash) {
+            alert("Kas tidak cukup untuk biaya operasional bulan ini!");
+            return;
+        }
+
+        // Potong Kas
+        state.cash -= totalOps;
+        let cfOp = -totalOps;
+        let cfInv = -rnd;
+
+        log(`<b>--- BULAN ${state.month} (${state.currentEco}) ---</b>`);
+
+        // PR & Reputasi
+        if (pr > 5000000) state.reputation = Math.min(100, state.reputation + 2);
+
+        // Sales Calculation
+        let baseDemand = 800 * (mkt / 15000000) * demandMult * (state.reputation / 100);
+        if (state.exportActive) baseDemand *= 1.8; // Ekspor Boost
+
+        let priceRatio = 120000 / Math.max(price, 1);
+        let unitsSold = Math.min(prodQty, Math.floor(baseDemand * priceRatio * (0.85 + Math.random() * 0.3)));
+
+        let revenue = unitsSold * price;
+        state.cash += revenue;
+        cfOp += revenue;
+
+        log(`Penjualan: Terjual ${unitsSold} / ${prodQty} unit. Pendapatan: ${formatIDR(revenue)}.`);
+
+        // Tax
+        let netProfitBeforeTax = revenue - totalOps;
+        if (netProfitBeforeTax > 0) {
+            let tax = netProfitBeforeTax * TAX_RATE;
+            state.cash -= tax;
+            cfOp -= tax;
+        }
+
+        state.lastCF = { op: cfOp, inv: cfInv, fin: 0, net: cfOp + cfInv };
+
+        // Random Eco & Events
+        state.currentEco = ecoConditions[Math.floor(Math.random() * ecoConditions.length)];
+
+        state.month++;
+
+        if (state.month > state.maxMonths) {
+            document.getElementById('btn-next').disabled = true;
+            let totalValuation = state.cash - state.debtBank - state.debtBond + (state.reputation * 1000000);
+            log(`----------------------------------------`);
+            log(`<b>SIMULASI 3 TAHUN SELESAI!</b>`);
+            log(`Valuasi Perusahaan Akhir: ${formatIDR(totalValuation)}`);
+        }
+
+        updateUI();
+    }
+
+    updateUI();
+</script>
+
+</body>
+</html>
