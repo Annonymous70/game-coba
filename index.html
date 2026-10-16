@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel-Opoly: Multiplayer Edition</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f2f1;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        /* Modal Setup Awal */
+        #setup-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .setup-box {
+            background: #fff; padding: 30px; border-radius: 12px;
+            width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .setup-box h2 { color: #107c41; margin-top: 0; }
+        .setup-box select, .setup-box input {
+            width: 100%; padding: 10px; margin: 10px 0;
+            border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px;
+        }
+        .name-group { text-align: left; font-weight: bold; font-size: 14px; }
+        
+        /* Dashboard Pemain Dinamis */
+        .dashboard {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+            background: #fff; padding: 15px; border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;
+            max-width: 900px; margin-left: auto; margin-right: auto;
+            border-bottom: 5px solid #107c41;
+        }
+        .player-stat { 
+            padding: 10px 15px; border-radius: 8px; font-weight: bold;
+            background: #f9f9f9; border: 2px solid transparent; min-width: 120px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.3s;
+        }
+        .player-stat span { display: block; font-size: 18px; margin-top: 5px; }
+        .active-turn { border-color: #107c41; background: #eaffea; transform: scale(1.05); }
+        .bankrupt { opacity: 0.4; text-decoration: line-through; }
+
+        /* Area Papan */
+        .board-container { width: 100%; overflow-x: auto; padding-bottom: 20px; }
+        .board {
+            display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 80px);
+            gap: 4px; min-width: 800px; max-width: 900px; margin: 0 auto;
+            background: #107c41; border: 6px solid #107c41; padding: 4px; border-radius: 8px;
+        }
+        .cell {
+            background: #fff; position: relative; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; font-size: 11px;
+            font-weight: bold; text-align: center; padding: 2px; border-radius: 4px;
+        }
+        .cell-header {
+            position: absolute; top: 0; left: 0; right: 0; height: 18px;
+            border-top-left-radius: 4px; border-top-right-radius: 4px;
+        }
+        .center-space {
+            grid-column: 2 / 9; grid-row: 2 / 9; background: #f3f2f1;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 6px; box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+        }
+        
+        /* Token Dinamis di dalam Petak */
+        .cell-tokens {
+            position: absolute; bottom: 2px; left: 2px; right: 2px; top: 20px;
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end;
+            gap: 2px; pointer-events: none;
+        }
+        .token {
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 10;
+        }
+
+        .controls { margin-top: 10px; }
+        button {
+            padding: 12px 30px; font-size: 16px; font-weight: bold; background: #107c41;
+            color: white; border: none; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); width: 100%; max-width: 400px;
+        }
+        button:hover { background: #0c5e31; }
+        button:disabled { background: #a19f9d; cursor: not-allowed; box-shadow: none; }
+        
+        #log {
+            margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px;
+            max-width: 900px; margin-left: auto; margin-right: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 150px; overflow-y: auto;
+            font-size: 14px; text-align: left; border-left: 5px solid #107c41;
+        }
+
+        /* Modal Truth or Dare */
+        #tod-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #fff; padding: 30px; border-radius: 12px;
+            max-width: 450px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .btn-tod { padding: 15px 40px; font-size: 18px; margin: 5px; border-radius: 8px; max-width: none; }
+        .btn-truth { background: #0078d4; } .btn-dare { background: #d83b01; }
+    </style>
+</head>
+<body>
+
+    <!-- Layar Setup Permainan -->
+    <div id="setup-screen">
+        <div class="setup-box">
+            <h2>Pengaturan Permainan</h2>
+            <div class="name-group">
+                <label>Jumlah Pemain:</label>
+                <select id="player-count" onchange="renderNameInputs()">
+                    <option value="2">2 Orang</option>
+                    <option value="3">3 Orang</option>
+                    <option value="4">4 Orang</option>
+                    <option value="5">5 Orang</option>
+                    <option value="6" selected>6 Orang</option>
+                </select>
+            </div>
+            <div id="name-inputs">
+                <!-- Input nama akan di-generate oleh JS -->
+            </div>
+            <button onclick="startGame()" style="margin-top: 15px;">▶ Mulai Permainan</button>
+        </div>
+    </div>
+
+    <!-- UI Utama Game -->
+    <div id="game-ui" style="display: none;">
+        <div class="dashboard" id="dashboard">
+            <!-- Statistik pemain dinamis -->
+        </div>
+
+        <div class="board-container">
+            <div class="board" id="game-board">
+                <!-- Papan 32 Petak -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="btn-roll" onclick="rollDice()">🎲 Kocok Dadu</button>
+        </div>
+
+        <div id="log">Selamat datang di <b>Excel-Opoly Edisi Multiplayer!</b><br>Silakan kocok dadu untuk memulai.</div>
+    </div>
+
+    <!-- Modal Truth or Dare -->
+    <div id="tod-modal">
+        <div class="modal-content">
+            <h2 id="tod-title">Tantangan Ekstra!</h2>
+            <p id="tod-text"></p>
+            <div id="tod-buttons">
+                <button class="btn-tod btn-truth" onclick="selectTOD('truth')">🤔 Truth (Jujur)</button>
+                <button class="btn-tod btn-dare" onclick="selectTOD('dare')">🔥 Dare (Tantangan)</button>
+            </div>
+            <div id="tod-done" style="display: none;">
+                <button onclick="finishTOD()" style="background:#107c41;">✅ Selesai (+50 Poin)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database Truth or Dare yang sudah diperbanyak
+        const truths = [
+            "Sebutkan satu rumus Excel yang sering membuatmu pusing!",
+            "Pernahkah kamu lupa nge-save tugas berjam-jam dan laptop mati?",
+            "Siapa teman di grup ini yang sering kamu contek tugas komputernya?",
+            "Jujur, kamu pernah pura-pura ngetik padahal main game saat praktikum?",
+            "Pernahkah kamu memalsukan progres tugas Excel padahal belum ngerjain sama sekali?",
+            "Sebutkan satu fitur Excel yang kamu rasa 'ini buat apa sih, nggak guna banget'?",
+            "Jujur, kamu pernah nggak sengaja nge-close file orang lain tanpa nge-save?",
+            "Pernahkah kamu diam-diam googling cara pakai rumus Excel pas ujian/ulangan?",
+            "Tugas kejuruan mana yang paling bikin kamu nangis atau frustrasi?",
+            "Pernahkah kamu menyembunyikan kolom/baris (Hide) biar kelihatan rapi, padahal rumus datanya error?",
+            "Apa alasan paling konyol yang pernah kamu pakai pas telat ngumpulin tugas IT?",
+            "Sebutkan shortcut keyboard yang sumpah kamu baru aja tahu hari ini!",
+            "Pernah nggak kamu nyalahin komputer/mouse rusak padahal kamunya yang nggak bisa ngerjain?",
+            "Jujur, kalau kamu disuruh pilih, mending disuruh presentasi ke depan kelas atau ngerjain tugas VLOOKUP 100 baris?"
+        ];
+
+        const dares = [
+            "Berikan gombalan maut menggunakan istilah IT / Excel ke pemain di sebelah kananmu!",
+            "Tahan nafas sambil mengeja kata SPREADSHEET secara terbalik!",
+            "Hormat gerak kepada layar laptop/HP selama 10 detik sambil berkata 'Siap laksanakan, Master CPU!'",
+            "Minta pemain lain memberikanmu tebakan perkalian matematika dadakan (misal: 12 x 8).",
+            "Gombalin pemain yang poinnya saat ini paling tinggi pakai kata 'Absolute Reference'.",
+            "Tirukan gaya komputer hang atau blue-screen selama 10 detik tanpa bersuara!",
+            "Puji pemain di sebelah kirimu dengan menyebutnya 'Master VLOOKUP' sambil membungkuk hormat!",
+            "Tutup mata dan ketikkan nama lengkapmu di keyboard imajiner. Teman-teman akan menilai ketepatan jarimu!",
+            "Baca satu pesan terakhir di grup WhatsApp kelas pakai gaya robot Google Translate!",
+            "Bikin pantun dadakan yang ujungnya pakai kata 'Excel'!",
+            "Berpose dengan gaya pusing mikirin rumus IF bertingkat selama 15 detik tanpa bergerak!",
+            "Joget gaya 'ngetik cepet' layaknya hacker di film-film selama 10 detik penuh semangat!",
+            "Minta maaf secara dramatis kepada CPU/Komputermu karena kamu sering memaksanya bekerja keras.",
+            "Lakukan gaya selebrasi pesepakbola (bebas) seolah-olah kamu baru saja berhasil menemukan error rumus!"
+        ];
+
+        // Struktur 32 Petak Papan
+        const spaces = [
+            { id: 0, name: "Buka File\n(START)", price: 0, type: "start", color: "#a8e6cf", grid: "9/9" },
+            { id: 1, name: "Kolom & Baris", price: 60, rent: 10, type: "prop", color: "#d7ccc8", grid: "9/8" },
+            { id: 2, name: "Forum IT", price: 0, type: "tod", color: "#e3f2fd", grid: "9/7" },
+            { id: 3, name: "Cell & Range", price: 60, rent: 10, type: "prop", color: "#d7ccc8", grid: "9/6" },
+            { id: 4, name: "Lisensi Expired", price: 0, type: "tax", taxAmt: 200, color: "#f5f5f5", grid: "9/5" },
+            { id: 5, name: "Format Painter", price: 100, rent: 20, type: "prop", color: "#e0f2f1", grid: "9/4" },
+            { id: 6, name: "Shortcut", price: 0, type: "tod", color: "#fff9c4", grid: "9/3" },
+            { id: 7, name: "Merge & Center", price: 100, rent: 20, type: "prop", color: "#e0f2f1", grid: "9/2" },
+            
+            { id: 8, name: "Aplikasi Crash!\n(Penjara)", price: 0, type: "jail", color: "#ffccbc", grid: "9/1" },
+            { id: 9, name: "Wrap Text", price: 120, rent: 25, type: "prop", color: "#e0f2f1", grid: "8/1" },
+            { id: 10, name: "Formula Bar", price: 150, rent: 30, type: "station", color: "#e8eaf6", grid: "7/1" },
+            { id: 11, name: "Fungsi SUM", price: 140, rent: 30, type: "prop", color: "#fce4ec", grid: "6/1" },
+            { id: 12, name: "Forum IT", price: 0, type: "tod", color: "#e3f2fd", grid: "5/1" },
+            { id: 13, name: "Fungsi AVERAGE", price: 140, rent: 30, type: "prop", color: "#fce4ec", grid: "4/1" },
+            { id: 14, name: "Fungsi COUNT", price: 160, rent: 35, type: "prop", color: "#fce4ec", grid: "3/1" },
+            { id: 15, name: "Ribbon Menu", price: 150, rent: 30, type: "station", color: "#e8eaf6", grid: "2/1" },
+            
+            { id: 16, name: "Istirahat\n(Aman)", price: 0, type: "free", color: "#a8e6cf", grid: "1/1" },
+            { id: 17, name: "MIN & MAX", price: 180, rent: 40, type: "prop", color: "#fff3e0", grid: "1/2" },
+            { id: 18, name: "Shortcut", price: 0, type: "tod", color: "#fff9c4", grid: "1/3" },
+            { id: 19, name: "Fungsi IF", price: 180, rent: 40, type: "prop", color: "#fff3e0", grid: "1/4" },
+            { id: 20, name: "Nested IF", price: 200, rent: 45, type: "prop", color: "#fff3e0", grid: "1/5" },
+            { id: 21, name: "Name Box", price: 150, rent: 30, type: "station", color: "#e8eaf6", grid: "1/6" },
+            { id: 22, name: "VLOOKUP", price: 220, rent: 50, type: "prop", color: "#ffebee", grid: "1/7" },
+            { id: 23, name: "HLOOKUP", price: 220, rent: 50, type: "prop", color: "#ffebee", grid: "1/8" },
+            
+            { id: 24, name: "Not Responding\n(Go To Jail)", price: 0, type: "go_to_jail", color: "#ffccbc", grid: "1/9" },
+            { id: 25, name: "Data Validation", price: 260, rent: 60, type: "prop", color: "#fffde7", grid: "2/9" },
+            { id: 26, name: "Cond. Formating", price: 260, rent: 60, type: "prop", color: "#fffde7", grid: "3/9" },
+            { id: 27, name: "Forum IT", price: 0, type: "tod", color: "#e3f2fd", grid: "4/9" },
+            { id: 28, name: "Pivot Table", price: 300, rent: 70, type: "prop", color: "#e8f5e9", grid: "5/9" },
+            { id: 29, name: "Pivot Chart", price: 300, rent: 70, type: "prop", color: "#e8f5e9", grid: "6/9" },
+            { id: 30, name: "Shortcut", price: 0, type: "tod", color: "#fff9c4", grid: "7/9" },
+            { id: 31, name: "VBA Script", price: 400, rent: 100, type: "prop", color: "#bbdefb", grid: "8/9" }
+        ];
+
+        // Konfigurasi Dinamis
+        const palette = ["#d83b01", "#0078d4", "#107c41", "#ffb900", "#8764b8", "#e81123"];
+        let players = [];
+        let turn = 0; 
+        let properties = {}; 
+        let currentPlayer = null;
+
+        // Render Input Nama di Layar Awal
+        function renderNameInputs() {
+            const count = document.getElementById("player-count").value;
+            const container = document.getElementById("name-inputs");
+            container.innerHTML = "";
+            for(let i=0; i<count; i++) {
+                container.innerHTML += `
+                    <div class="name-group">
+                        <label style="color:${palette[i]}">Nama Pemain ${i+1}:</label>
+                        <input type="text" id="p-name-${i}" placeholder="Masukkan Nama" value="Pemain ${i+1}">
+                    </div>`;
+            }
+        }
+
+        // Mulai Game
+        function startGame() {
+            const count = document.getElementById("player-count").value;
+            players = [];
+            for(let i=0; i<count; i++) {
+                let nameStr = document.getElementById(`p-name-${i}`).value || `Pemain ${i+1}`;
+                players.push({
+                    id: i, name: nameStr, money: 1500, position: 0, 
+                    color: palette[i], bankrupt: false
+                });
+            }
+            
+            document.getElementById("setup-screen").style.display = "none";
+            document.getElementById("game-ui").style.display = "block";
+            
+            initDashboard();
+            initBoard();
+        }
+
+        // Setup UI
+        window.onload = renderNameInputs;
+
+        function initDashboard() {
+            const dash = document.getElementById("dashboard");
+            dash.innerHTML = "";
+            players.forEach(p => {
+                dash.innerHTML += `
+                    <div class="player-stat" id="stat-p${p.id}" style="color:${p.color};">
+                        ${p.name}
+                        <span id="money-${p.id}">${p.money} Poin</span>
+                    </div>`;
+            });
+            updateDashboardTurn();
+        }
+
+        function initBoard() {
+            const boardDiv = document.getElementById("game-board");
+            boardDiv.innerHTML = "";
+            
+            spaces.forEach(space => {
+                let cell = document.createElement("div");
+                cell.className = "cell";
+                cell.style.gridArea = space.grid;
+                cell.id = "cell-" + space.id;
+
+                if(space.type === "prop" || space.type === "station") {
+                    let header = document.createElement("div");
+                    header.className = "cell-header";
+                    header.style.backgroundColor = space.color;
+                    cell.appendChild(header);
+                } else {
+                    cell.style.backgroundColor = space.color;
+                }
+
+                let text = document.createElement("div");
+                text.innerText = space.name;
+                text.style.zIndex = "1";
+                cell.appendChild(text);
+
+                if (space.type === "prop" || space.type === "station") {
+                    let price = document.createElement("div");
+                    price.innerText = `${space.price} Poin`;
+                    price.style.fontSize = "9px";
+                    price.style.marginTop = "5px";
+                    price.style.zIndex = "1";
+                    cell.appendChild(price);
+                }
+                
+                // Kontainer untuk Token
+                let tokenContainer = document.createElement("div");
+                tokenContainer.className = "cell-tokens";
+                tokenContainer.id = "tokens-" + space.id;
+                cell.appendChild(tokenContainer);
+
+                boardDiv.appendChild(cell);
+            });
+
+            let center = document.createElement("div");
+            center.className = "center-space";
+            center.innerHTML = "<h1 style='color:#107c41; margin:0; font-size:42px;'>EXCEL-OPOLY</h1><h3 style='margin:5px 0 15px 0; color:#555;'>Edisi Multiplayer</h3><div style='display:flex; gap:10px;'><div style='padding:5px 10px; background:#fff9c4; border:1px solid #ccc; border-radius:5px;'>⚡ Shortcut</div><div style='padding:5px 10px; background:#e3f2fd; border:1px solid #ccc; border-radius:5px;'>🌐 Forum IT</div></div>";
+            boardDiv.appendChild(center);
+
+            updateTokens();
+        }
+
+        function updateTokens() {
+            document.querySelectorAll('.token').forEach(e => e.remove());
+            players.forEach(p => {
+                if(p.bankrupt) return; // Jangan gambar bidak orang bangkrut
+                let container = document.getElementById("tokens-" + p.position);
+                if(container) {
+                    let token = document.createElement("div");
+                    token.className = "token";
+                    token.style.backgroundColor = p.color;
+                    container.appendChild(token);
+                }
+            });
+        }
+
+        function updateDashboardTurn() {
+            players.forEach(p => {
+                let el = document.getElementById(`stat-p${p.id}`);
+                el.classList.remove("active-turn");
+                if(p.bankrupt) el.classList.add("bankrupt");
+                if(p.id === turn && !p.bankrupt) el.classList.add("active-turn");
+                document.getElementById(`money-${p.id}`).innerText = `${p.money} Poin`;
+            });
+            const btn = document.getElementById("btn-roll");
+            btn.innerHTML = `🎲 Kocok Dadu (${players[turn].name})`;
+            btn.style.backgroundColor = players[turn].color;
+        }
+
+        function addLog(message) {
+            const logDiv = document.getElementById("log");
+            logDiv.innerHTML = message + "<br><hr style='border-top:1px dashed #ccc;'><br>" + logDiv.innerHTML;
+        }
+
+        function rollDice() {
+            document.getElementById("btn-roll").disabled = true;
+            let dice = Math.floor(Math.random() * 6) + 1;
+            currentPlayer = players[turn];
+            
+            addLog(`🎲 <b style="color:${currentPlayer.color}">${currentPlayer.name}</b> mengocok dadu dan melangkah <b>${dice} petak</b>.`);
+            
+            currentPlayer.position += dice;
+
+            if (currentPlayer.position >= spaces.length) {
+                currentPlayer.position = currentPlayer.position % spaces.length;
+                currentPlayer.money += 200;
+                addLog(`📁 <b>${currentPlayer.name}</b> melewati <b>START</b>. Mengambil gaji modul +200 Poin.`);
+            }
+
+            updateTokens();
+            setTimeout(() => checkSpace(currentPlayer), 600);
+        }
+
+        // Modal Truth or Dare
+        function triggerTOD(player, typeName) {
+            document.getElementById('tod-modal').style.display = 'flex';
+            document.getElementById('tod-title').innerText = typeName;
+            document.getElementById('tod-text').innerHTML = `<b style="color:${player.color}">${player.name}</b>, kamu berani pilih mana?`;
+            
+            document.getElementById('tod-buttons').style.display = 'block';
+            document.getElementById('tod-done').style.display = 'none';
+        }
+
+        function selectTOD(choice) {
+            let arr = choice === 'truth' ? truths : dares;
+            let question = arr[Math.floor(Math.random() * arr.length)];
+            let label = choice === 'truth' ? "🤔 TRUTH" : "🔥 DARE";
+            document.getElementById('tod-text').innerHTML = `<strong style="font-size:24px;">${label}</strong><br><br>${question}`;
+            
+            document.getElementById('tod-buttons').style.display = 'none';
+            document.getElementById('tod-done').style.display = 'block';
+        }
+
+        function finishTOD() {
+            document.getElementById('tod-modal').style.display = 'none';
+            addLog(`🎭 <b>${currentPlayer.name}</b> berhasil menyelesaikan tantangan Truth or Dare! <b>(+50 Poin)</b>`);
+            currentPlayer.money += 50;
+            finishTurn();
+        }
+
+        function checkSpace(player) {
+            let space = spaces[player.position];
+            let owner = properties[space.id];
+
+            if (space.type === "prop" || space.type === "station") {
+                if (owner === undefined) {
+                    if (player.money >= space.price) {
+                        let buy = confirm(`${space.name} belum dikuasai.\nBiaya: ${space.price} Poin\nPelajari materi ini?`);
+                        if (buy) {
+                            player.money -= space.price;
+                            properties[space.id] = player.id;
+                            addLog(`🎓 <b>${player.name}</b> menguasai materi <b>${space.name}</b>.`);
+                            document.getElementById("cell-"+space.id).style.borderBottom = `6px solid ${player.color}`;
+                        } else {
+                            addLog(`⏩ ${player.name} melewatkan materi ${space.name}.`);
+                        }
+                    } else {
+                        addLog(`⚠️ Poin ${player.name} tidak cukup untuk mempelajari ${space.name}.`);
+                    }
+                } else if (owner !== player.id) {
+                    let rentAmount = space.rent;
+                    player.money -= rentAmount;
+                    players[owner].money += rentAmount;
+                    addLog(`💡 <b>${player.name}</b> membayar royalti tutor <b>${rentAmount} Poin</b> kepada <b style="color:${players[owner].color}">${players[owner].name}</b>.`);
+                }
+            } else if (space.type === "tod") {
+                triggerTOD(player, space.name);
+                return; // Tahan giliran
+            } else if (space.type === "tax") {
+                player.money -= space.taxAmt;
+                addLog(`📉 <b>Lisensi Expired!</b> ${player.name} kehilangan -${space.taxAmt} Poin.`);
+            } else if (space.type === "go_to_jail") {
+                player.position = 8;
+                updateTokens();
+                addLog(`🛑 <b>Excel Not Responding!</b> ${player.name} dikirim ke Aplikasi Crash.`);
+            }
+
+            finishTurn();
+        }
+
+        function finishTurn() {
+            // Cek kebangkrutan
+            players.forEach(p => {
+                if(p.money <= 0 && !p.bankrupt) {
+                    p.bankrupt = true;
+                    addLog(`💀 <b>${p.name} KEHABISAN POIN DAN DROP OUT!</b>`);
+                    updateTokens(); // Hapus bidak
+                }
+            });
+
+            // Cek pemenang jika sisa 1
+            let activePlayers = players.filter(p => !p.bankrupt);
+            if(activePlayers.length === 1) {
+                updateDashboardTurn();
+                addLog(`🏆 <h2 style="color:${activePlayers[0].color}">${activePlayers[0].name} MENANG!</h2> Permainan Selesai.`);
+                document.getElementById("btn-roll").disabled = true;
+                return;
+            }
+
+            // Ganti Giliran ke pemain aktif berikutnya
+            do {
+                turn = (turn + 1) % players.length;
+            } while (players[turn].bankrupt);
+
+            updateDashboardTurn();
+            document.getElementById("btn-roll").disabled = false;
+        }
+    </script>
+</body>
+</html>
